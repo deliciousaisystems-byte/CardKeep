@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0A0A0F"/>
+<title>CardKeep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root {
+  --ink: #0A0A0F;
+  --ink2: #14141C;
+  --ink3: #1E1E2E;
+  --mist: #2A2A3E;
+  --mid: #6B6B8A;
+  --pale: #A8A8C0;
+  --ghost: rgba(255,255,255,0.06);
+  --ghostborder: rgba(255,255,255,0.09);
+  --white: #FFFFFF;
+  --cream: #F5F0E8;
+  --gold: #E8C97A;
+  --gold2: #C9A84C;
+  --neon: #7FFFD4;
+  --neon2: #00E5B0;
+  --rose: #FF6B8A;
+  --lavender: #B8A9FF;
+  --r: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--ink);
+  color: var(--white);
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LANDING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#landing {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  position: relative;
+  overflow: hidden;
+  padding: 40px 28px calc(40px + var(--safe-bottom));
+}
+
+/* Animated mesh background */
+.mesh-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.mesh-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: orbFloat 12s ease-in-out infinite;
+}
+.mesh-orb:nth-child(1) { width:400px;height:400px;background:radial-gradient(circle,#7FFFD4,transparent);top:-100px;left:-100px;animation-delay:0s; }
+.mesh-orb:nth-child(2) { width:350px;height:350px;background:radial-gradient(circle,#B8A9FF,transparent);bottom:-80px;right:-80px;animation-delay:4s; }
+.mesh-orb:nth-child(3) { width:250px;height:250px;background:radial-gradient(circle,#FF6B8A,transparent);top:40%;left:30%;animation-delay:8s;opacity:0.2; }
+
+@keyframes orbFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(30px,-20px) scale(1.05); }
+  66% { transform: translate(-20px,30px) scale(0.95); }
+}
+
+/* Grid texture */
+.grid-texture {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(127,255,212,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(127,255,212,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.landing-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  animation: landingReveal 1s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes landingReveal {
+  from { opacity:0; transform:translateY(40px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Logo mark */
+.logo-mark {
+  width: 80px; height: 80px;
+  margin-bottom: 28px;
+  position: relative;
+}
+.logo-mark svg { width: 80px; height: 80px; }
+
+.landing-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--neon);
+  margin-bottom: 12px;
+}
+
+.landing-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(52px, 14vw, 72px);
+  font-style: italic;
+  line-height: 0.9;
+  text-align: center;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--white) 0%, var(--cream) 50%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-sub {
+  font-size: 14px;
+  color: var(--mid);
+  text-align: center;
+  line-height: 1.7;
+  margin-bottom: 48px;
+  max-width: 300px;
+  font-weight: 400;
+}
+
+/* Login card */
+.login-card {
+  width: 100%;
+  background: var(--ghost);
+  border: 1px solid var(--ghostborder);
+  border-radius: var(--r-xl);
+  padding: 32px 28px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.login-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.login-card-sub {
+  font-size: 13px;
+  color: var(--mid);
+  margin-bottom: 28px;
+  font-weight: 400;
+}
+
+/* GSI button container */
+#googleSignInBtn {
+  display: flex;
+  justify-content: center;
+  min-height: 48px;
+  margin-bottom: 16px;
+}
+
+.google-btn-fallback {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: var(--white);
+  color: #3c4043;
+  border: none;
+  border-radius: var(--r);
+  padding: 15px 24px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+.google-btn-fallback:active { transform: scale(0.98); }
+
+.divider-row {
+  display: flex; align-items: center; gap: 12px;
+  margin: 4px 0 16px;
+}
+.divider-row::before, .divider-row::after {
+  content: ''; flex: 1; height: 1px; background: var(--ghostborder);
+}
+.divider-row span { font-size: 11px; color: var(--mid); letter-spacing: 1px; }
+
+.demo-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--ghostborder);
+  border-radius: var(--r);
+  padding: 14px;
+  color: var(--pale);
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.demo-btn:active { background: var(--ghost); }
+
+.login-legal {
+  font-size: 11px; color: var(--mid);
+  text-align: center; margin-top: 16px;
+  line-height: 1.6; font-weight: 400;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   APP SHELL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#app {
+  display: none;
+  flex-direction: column;
+  min-height: 100svh;
+  background: var(--ink);
+}
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 200;
+  padding: calc(var(--safe-top) + 12px) 20px 12px;
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--ghostborder);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.topbar-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.topbar-logo svg { width: 28px; height: 28px; }
+.topbar-wordmark {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  font-style: italic;
+  background: linear-gradient(90deg, var(--white), var(--gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.avatar-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon2), var(--lavender));
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: var(--ink);
+  font-family: 'Syne', sans-serif;
+  transition: transform 0.15s;
+}
+.avatar-btn:active { transform: scale(0.92); }
+
+.signout-btn {
+  font-size: 12px; color: var(--mid);
+  background: none; border: 1px solid var(--ghostborder);
+  border-radius: 20px; padding: 6px 14px;
+  cursor: pointer; font-family: 'Syne', sans-serif;
+  transition: all 0.2s;
+}
+.signout-btn:active { color: var(--white); border-color: var(--white); }
+
+/* Bottom nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  padding: 10px 20px calc(var(--safe-bottom) + 10px);
+  background: rgba(10,10,15,0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--ghostborder);
+  display: flex; justify-content: space-around; align-items: center;
+}
+
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; background: none; border: none;
+  flex: 1; padding: 6px 4px;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-item .nav-icon {
+  width: 44px; height: 36px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+.nav-item .nav-label {
+  font-size: 10px; font-weight: 600; color: var(--mid);
+  letter-spacing: 0.5px; text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-item.active .nav-icon { background: rgba(127,255,212,0.15); }
+.nav-item.active .nav-label { color: var(--neon); }
+
+/* Scroll content area */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 20px calc(100px + var(--safe-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   VIEWS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.view { display: none; }
+.view.active { display: block; animation: viewIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes viewIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* Page header */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.page-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--neon); margin-bottom: 4px;
+}
+.page-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 36px; font-style: italic;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--white), var(--cream));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* FAB */
+.fab {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--neon2), var(--lavender));
+  border: none; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; color: var(--ink); line-height: 1;
+  cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 8px 28px rgba(0,229,176,0.35);
+  transition: all 0.15s;
+  font-weight: 300;
+}
+.fab:active { transform: scale(0.9); box-shadow: 0 4px 14px rgba(0,229,176,0.3); }
+
+/* Summary pills */
+.summary-strip {
+  display: flex; gap: 10px; margin-bottom: 28px;
+  overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.summary-strip::-webkit-scrollbar { display: none; }
+
+.summary-pill {
+  flex-shrink: 0;
+  background: var(--ghost);
+  border: 1px solid var(--ghostborder);
+  border-radius: 14px;
+  padding: 14px 18px;
+  min-width: 110px;
+}
+.summary-pill .sp-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--mid); margin-bottom: 6px;
+}
+.summary-pill .sp-val {
+  font-family: 'Syne Mono', monospace;
+  font-size: 22px; color: var(--white); line-height: 1;
+}
+.summary-pill .sp-val.accent { color: var(--neon); }
+
+/* Cards stack */
+.cards-list { display: flex; flex-direction: column; gap: 14px; }
+
+/* Gift card tile */
+.gift-card {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--ink2);
+  border: 1px solid var(--ghostborder);
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.gift-card:active { transform: scale(0.98); }
+
+.gc-banner {
+  height: 88px;
+  position: relative;
+  display: flex; align-items: flex-end;
+  padding: 14px 18px;
+  overflow: hidden;
+}
+.gc-banner::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.4));
+}
+.gc-name {
+  position: relative; z-index: 1;
+  font-size: 20px; font-weight: 800; color: var(--white);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  letter-spacing: -0.3px;
+}
+.gc-shimmer {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 60%; opacity: 0.12;
+  background: radial-gradient(ellipse at top right, white, transparent 70%);
+}
+
+.gc-body {
+  padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.gc-num {
+  font-family: 'Syne Mono', monospace;
+  font-size: 12px; color: var(--mid); letter-spacing: 2px;
+}
+.gc-balance-wrap { text-align: right; }
+.gc-balance {
+  font-family: 'Syne Mono', monospace;
+  font-size: 20px; color: var(--white); font-weight: 400;
+}
+.gc-balance-lbl { font-size: 10px; color: var(--mid); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
+.gc-footer {
+  padding: 0 18px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.shared-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  color: var(--neon); background: rgba(127,255,212,0.1);
+  border: 1px solid rgba(127,255,212,0.2);
+  border-radius: 20px; padding: 4px 10px;
+}
+
+.gc-actions {
+  display: flex; gap: 6px;
+}
+.gc-act-btn {
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  border: none; cursor: pointer; font-family: 'Syne', sans-serif;
+  transition: all 0.15s;
+}
+.gc-act-view { background: rgba(127,255,212,0.12); color: var(--neon); }
+.gc-act-share { background: rgba(184,169,255,0.12); color: var(--lavender); }
+.gc-act-del { background: rgba(255,107,138,0.1); color: var(--rose); }
+
+/* Empty state */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 64px 20px; text-align: center; gap: 12px;
+}
+.empty-icon {
+  width: 72px; height: 72px;
+  background: var(--ghost); border: 1px solid var(--ghostborder);
+  border-radius: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; margin-bottom: 8px;
+}
+.empty-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px; font-style: italic; color: var(--white);
+}
+.empty-body { font-size: 14px; color: var(--mid); font-weight: 400; max-width: 240px; line-height: 1.6; }
+
+/* Members strip */
+.members-panel {
+  background: var(--ghost); border: 1px solid var(--ghostborder);
+  border-radius: var(--r-lg); padding: 20px;
+  margin-bottom: 24px;
+}
+.members-panel-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--mid); margin-bottom: 14px;
+}
+.members-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.member-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--ghostborder);
+  border-radius: 24px; padding: 6px 14px 6px 8px;
+}
+.member-chip .mc-av {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon2), var(--lavender));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: var(--ink);
+}
+.member-chip .mc-name { font-size: 13px; font-weight: 600; }
+.add-member-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: 1px dashed rgba(127,255,212,0.3);
+  border-radius: 24px; padding: 6px 14px;
+  color: var(--neon); font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'Syne', sans-serif;
+  transition: all 0.2s;
+}
+.add-member-chip:active { background: rgba(127,255,212,0.08); }
+
+/* Account view */
+.account-profile {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--ghost); border: 1px solid var(--ghostborder);
+  border-radius: var(--r-lg); padding: 20px;
+  margin-bottom: 20px;
+}
+.account-av {
+  width: 56px; height: 56px; border-radius: 18px;
+  background: linear-gradient(135deg, var(--neon2), var(--lavender));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; color: var(--ink);
+  flex-shrink: 0;
+}
+.account-name { font-size: 18px; font-weight: 700; }
+.account-email { font-size: 13px; color: var(--mid); font-weight: 400; margin-top: 2px; }
+
+.upgrade-banner {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid rgba(127,255,212,0.25);
+  border-radius: var(--r-lg);
+  padding: 24px 20px;
+  margin-bottom: 20px;
+  position: relative; overflow: hidden;
+}
+.upgrade-banner::before {
+  content: '';
+  position: absolute; top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle, rgba(127,255,212,0.12), transparent 70%);
+}
+.upgrade-banner .ub-tag {
+  display: inline-block;
+  font-size: 10px; font-weight: 800; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--neon);
+  border: 1px solid rgba(127,255,212,0.3);
+  border-radius: 20px; padding: 4px 12px; margin-bottom: 12px;
+}
+.upgrade-banner h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px; font-style: italic; margin-bottom: 8px;
+}
+.upgrade-banner p { font-size: 13px; color: var(--pale); line-height: 1.6; margin-bottom: 16px; font-weight: 400; }
+.upgrade-features {
+  list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;
+}
+.upgrade-features li {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-weight: 500;
+}
+.upgrade-features li::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--neon); flex-shrink: 0;
+}
+.btn-notify {
+  width: 100%; background: linear-gradient(135deg, var(--neon2), var(--lavender));
+  color: var(--ink); border: none; border-radius: var(--r);
+  padding: 15px; font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 800; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-notify:active { transform: scale(0.98); }
+
+.settings-cells { display: flex; flex-direction: column; gap: 10px; }
+.settings-cell {
+  background: var(--ghost); border: 1px solid var(--ghostborder);
+  border-radius: var(--r-lg); padding: 18px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.settings-cell:active { border-color: var(--neon); }
+.settings-cell .sc-left { display: flex; flex-direction: column; gap: 3px; }
+.settings-cell .sc-label { font-size: 15px; font-weight: 600; }
+.settings-cell .sc-sub { font-size: 12px; color: var(--mid); font-weight: 400; }
+.settings-cell .sc-arrow { color: var(--mid); font-size: 18px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MODALS (bottom sheets on mobile)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sheet-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 500;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet-overlay.open { display: flex; }
+
+.sheet {
+  width: 100%;
+  max-width: 540px;
+  max-height: 92svh;
+  background: var(--ink2);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  border-top: 1px solid var(--ghostborder);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  animation: sheetUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(100%); opacity: 0.8; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.sheet-handle {
+  display: flex; justify-content: center;
+  padding: 12px 0 0;
+  flex-shrink: 0;
+}
+.sheet-handle::before {
+  content: ''; width: 40px; height: 4px;
+  background: var(--mist); border-radius: 2px;
+}
+
+.sheet-scroll {
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(20px + var(--safe-bottom));
+}
+
+/* Sheet header */
+.sheet-header {
+  padding: 16px 24px 20px;
+  border-bottom: 1px solid var(--ghostborder);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.sheet-title { font-size: 20px; font-weight: 800; }
+.sheet-close {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: var(--ghost); border: none; color: var(--pale);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+}
+
+/* Form elements */
+.form-section { padding: 20px 24px 0; }
+.form-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--mid); margin-bottom: 8px;
+  display: block;
+}
+.form-input {
+  width: 100%; background: var(--ghost);
+  border: 1px solid var(--ghostborder);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px; color: var(--white);
+  outline: none; transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.form-input:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(127,255,212,0.1); }
+.form-input::placeholder { color: var(--mist); }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.cswatch {
+  width: 36px; height: 36px; border-radius: 10px;
+  cursor: pointer; border: 2px solid transparent;
+  transition: all 0.15s;
+}
+.cswatch.sel { border-color: var(--white); transform: scale(1.15); }
+
+/* Upload zone */
+.upload-tgt {
+  position: relative;
+  background: var(--ghost);
+  border: 1.5px dashed rgba(127,255,212,0.25);
+  border-radius: var(--r-lg);
+  padding: 28px 20px;
+  text-align: center; cursor: pointer;
+  transition: all 0.2s;
+}
+.upload-tgt:active { border-color: var(--neon); background: rgba(127,255,212,0.05); }
+.upload-tgt input[type=file] { position: absolute; inset:0; opacity:0; cursor:pointer; width:100%;height:100%; }
+.upload-tgt .ut-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-tgt p { font-size: 13px; color: var(--mid); font-weight: 400; }
+.upload-tgt p strong { color: var(--neon); font-weight: 700; }
+
+.upload-preview {
+  width: 100%; border-radius: var(--r);
+  max-height: 140px; object-fit: cover;
+  margin-top: 10px; display: none;
+  border: 1px solid var(--ghostborder);
+}
+
+/* Sheet footer */
+.sheet-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--ghostborder);
+  display: flex; gap: 10px;
+  flex-shrink: 0;
+  background: var(--ink2);
+}
+.btn-ghost {
+  flex: 1; background: var(--ghost); border: 1px solid var(--ghostborder);
+  color: var(--pale); border-radius: var(--r);
+  padding: 14px; font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-ghost:active { background: var(--mist); }
+.btn-cta {
+  flex: 2; background: linear-gradient(135deg, var(--neon2), var(--lavender));
+  color: var(--ink); border: none; border-radius: var(--r);
+  padding: 14px; font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 800; cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 6px 20px rgba(0,229,176,0.3);
+}
+.btn-cta:active { transform: scale(0.98); }
+
+/* Detail sheet */
+.detail-hero {
+  height: 140px;
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px; overflow: hidden;
+}
+.detail-hero::after {
+  content:''; position:absolute;inset:0;
+  background:linear-gradient(to bottom,transparent 40%,var(--ink2));
+}
+.detail-hero .dh-name {
+  position:relative;z-index:1;
+  font-size:28px; font-weight:800; color:var(--white);
+  text-shadow:0 2px 12px rgba(0,0,0,0.5);
+}
+.detail-hero .dh-num {
+  position:relative;z-index:1;
+  font-family:'Syne Mono',monospace;
+  font-size:13px; color:rgba(255,255,255,0.65); letter-spacing:3px;
+}
+
+.detail-rows { padding: 0 24px 4px; }
+.detail-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ghostborder);
+}
+.detail-row:last-child { border-bottom: none; }
+.dr-label {
+  font-size:11px; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; color:var(--mid);
+}
+.dr-val {
+  font-size:14px; font-weight:700; color:var(--white);
+  font-family:'Syne Mono',monospace;
+}
+.dr-copy {
+  display:flex; align-items:center; gap:8px;
+}
+.copy-btn {
+  background:rgba(127,255,212,0.1); border:none; color:var(--neon);
+  border-radius:8px; padding:4px 10px; font-size:11px; font-weight:700;
+  cursor:pointer; font-family:'Syne',sans-serif;
+}
+
+/* Share section */
+.share-panel { padding: 20px 24px 0; }
+.share-panel-title {
+  font-size:11px; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; color:var(--mid); margin-bottom:12px;
+}
+.share-input-row { display:flex; gap:8px; }
+.share-input-row input {
+  flex:1; background:var(--ghost); border:1px solid var(--ghostborder);
+  border-radius:var(--r); padding:12px 14px;
+  font-family:'Syne',sans-serif; font-size:14px; color:var(--white);
+  outline:none;
+}
+.share-input-row input:focus { border-color:var(--neon); }
+.share-input-row input::placeholder { color:var(--mist); }
+.share-send-btn {
+  background:linear-gradient(135deg,var(--neon2),var(--lavender));
+  color:var(--ink); border:none; border-radius:var(--r);
+  padding:12px 16px; font-size:13px; font-weight:800;
+  cursor:pointer; font-family:'Syne',sans-serif;
+}
+
+.shared-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.shared-row {
+  display:flex; align-items:center; gap:10px;
+  background:var(--ghost); border:1px solid var(--ghostborder);
+  border-radius:12px; padding:10px 14px;
+}
+.shared-row .sr-av {
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--neon2),var(--lavender));
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:var(--ink);flex-shrink:0;
+}
+.shared-row .sr-email { font-size:13px;flex:1;color:var(--pale); }
+.shared-row .sr-remove {
+  font-size:11px;color:var(--rose);background:none;border:none;
+  cursor:pointer;font-weight:700;
+}
+
+/* Photo panel */
+.photo-panel { padding: 20px 24px 0; }
+.photo-panel-title {
+  font-size:11px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--mid);margin-bottom:12px;
+}
+.card-photo-img {
+  width:100%;border-radius:var(--r);
+  max-height:180px;object-fit:contain;
+  background:var(--ink3);border:1px solid var(--ghostborder);
+}
+.photo-actions { display:flex;gap:8px;margin-top:10px; }
+.ph-btn {
+  flex:1; padding:10px; border-radius:10px;
+  font-size:12px;font-weight:700;border:none;cursor:pointer;
+  font-family:'Syne',sans-serif; transition:all 0.15s;
+  position:relative; overflow:hidden;
+}
+.ph-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.ph-view { background:rgba(127,255,212,0.1);color:var(--neon); }
+.ph-replace { background:rgba(184,169,255,0.1);color:var(--lavender); }
+.ph-del { background:rgba(255,107,138,0.1);color:var(--rose); }
+
+/* Lightbox */
+#photoLightbox {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.93); z-index:9000;
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:20px; padding:20px;
+}
+#photoLightbox.open { display:flex; }
+#photoLightbox img { max-width:100%;max-height:80svh;border-radius:var(--r);object-fit:contain; }
+#photoLightbox button {
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+  color:var(--white);border-radius:10px;padding:12px 28px;
+  font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;
+}
+
+/* Toast */
+#toast {
+  position:fixed; bottom:calc(90px + var(--safe-bottom)); left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--white); color:var(--ink);
+  padding:12px 20px; border-radius:40px;
+  font-size:13px; font-weight:700;
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+  z-index:9999; opacity:0;
+  transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+  white-space:nowrap; pointer-events:none;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--mist); border-radius:2px; }
+
+@media (min-width:540px) {
+  .sheet { border-radius: var(--r-xl); margin: auto; margin-bottom: 0; }
+  .cards-list { display:grid; grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ LANDING ━━━━━━━━━━━━━━━━━━━━ -->
+<section id="landing">
+  <div class="mesh-bg">
+    <div class="mesh-orb"></div>
+    <div class="mesh-orb"></div>
+    <div class="mesh-orb"></div>
+    <div class="grid-texture"></div>
+  </div>
+
+  <div class="landing-inner">
+    <div class="logo-mark">
+      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="24" y="10" width="46" height="32" rx="7" fill="rgba(127,255,212,0.12)" stroke="rgba(127,255,212,0.3)" stroke-width="1.5"/>
+        <rect x="16" y="22" width="46" height="32" rx="7" fill="rgba(184,169,255,0.15)" stroke="rgba(184,169,255,0.3)" stroke-width="1.5"/>
+        <rect x="8" y="34" width="46" height="32" rx="7" fill="rgba(127,255,212,0.2)" stroke="rgba(127,255,212,0.5)" stroke-width="1.5"/>
+        <rect x="14" y="42" width="10" height="7" rx="2" fill="rgba(127,255,212,0.4)"/>
+        <rect x="14" y="53" width="18" height="2.5" rx="1.2" fill="rgba(127,255,212,0.25)"/>
+        <circle cx="44" cy="45" r="3.5" fill="white" opacity="0.8"/>
+        <circle cx="52" cy="39" r="3.5" fill="white" opacity="0.8"/>
+        <circle cx="52" cy="51" r="3.5" fill="white" opacity="0.8"/>
+        <line x1="47" y1="43" x2="50" y2="40.5" stroke="white" stroke-width="1.5" opacity="0.6"/>
+        <line x1="47" y1="47" x2="50" y2="49.5" stroke="white" stroke-width="1.5" opacity="0.6"/>
+      </svg>
+    </div>
+
+    <p class="landing-eyebrow">Digital Gift Wallet</p>
+    <h1 class="landing-title">Card<br>Keep</h1>
+    <p class="landing-sub">Store every gift card once. Your whole family gets access — wherever, whenever.</p>
+
+    <div class="login-card">
+      <div class="login-card-title">Welcome back</div>
+      <div class="login-card-sub">Sign in to your wallet</div>
+
+      <div id="g_id_onload"
+           data-client_id="YOUR_GOOGLE_CLIENT_ID"
+           data-callback="handleGoogleCredential"
+           data-auto_prompt="true"
+           data-auto_select="false"
+           data-context="signin">
+      </div>
+      <div id="googleSignInBtn"></div>
+
+      <button class="google-btn-fallback" id="fallbackGoogleBtn" onclick="triggerGoogleSignIn()" style="display:none;">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="divider-row"><span>or</span></div>
+      <button class="demo-btn" onclick="enterDemo()">Try Demo — no sign-in needed</button>
+      <p class="login-legal">By signing in you agree to our Terms &amp; Privacy Policy</p>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ APP ━━━━━━━━━━━━━━━━━━━━ -->
+<div id="app">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="3" width="16" height="11" rx="3" fill="rgba(127,255,212,0.15)" stroke="rgba(127,255,212,0.35)" stroke-width="1"/>
+        <rect x="5" y="8" width="16" height="11" rx="3" fill="rgba(184,169,255,0.18)" stroke="rgba(184,169,255,0.35)" stroke-width="1"/>
+        <rect x="2" y="13" width="16" height="11" rx="3" fill="rgba(127,255,212,0.25)" stroke="rgba(127,255,212,0.55)" stroke-width="1"/>
+        <circle cx="15" cy="17" r="1.5" fill="white" opacity="0.8"/>
+        <circle cx="18" cy="14.5" r="1.5" fill="white" opacity="0.8"/>
+        <circle cx="18" cy="19.5" r="1.5" fill="white" opacity="0.8"/>
+      </svg>
+      <span class="topbar-wordmark">CardKeep</span>
+    </div>
+    <div class="topbar-right">
+      <button class="avatar-btn" id="userAvatar">D</button>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Scroll area -->
+  <div class="scroll-area">
+    <!-- MY WALLET -->
+    <div id="view-wallet" class="view active">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">Your Collection</div>
+          <div class="page-title">My Wallet</div>
+        </div>
+        <button class="fab" onclick="openAddModal()">+</button>
+      </div>
+
+      <div class="summary-strip">
+        <div class="summary-pill">
+          <div class="sp-label">Cards</div>
+          <div class="sp-val accent" id="totalCards">0</div>
+        </div>
+        <div class="summary-pill">
+          <div class="sp-label">Total Value</div>
+          <div class="sp-val">$<span id="totalValue">0.00</span></div>
+        </div>
+        <div class="summary-pill">
+          <div class="sp-label">Shared With</div>
+          <div class="sp-val accent" id="totalShared">0</div>
+        </div>
+      </div>
+
+      <div id="cardsGrid" class="cards-list"></div>
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">🎁</div>
+        <div class="empty-title">No cards yet</div>
+        <div class="empty-body">Tap the + button to store your first gift card</div>
+      </div>
+    </div>
+
+    <!-- SHARED WALLET -->
+    <div id="view-shared" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">Family Access</div>
+          <div class="page-title">Shared</div>
+        </div>
+      </div>
+
+      <div class="members-panel">
+        <div class="members-panel-title">Wallet Members</div>
+        <div class="members-row">
+          <div class="member-chip">
+            <div class="mc-av" id="ownerInitial">D</div>
+            <span class="mc-name">You (Owner)</span>
+          </div>
+          <div class="member-chip">
+            <div class="mc-av">S</div>
+            <span class="mc-name">Sarah</span>
+          </div>
+          <button class="add-member-chip" onclick="showToast('Invite sent! 📨')">+ Invite</button>
+        </div>
+      </div>
+
+      <div id="sharedCardsGrid" class="cards-list"></div>
+      <div id="sharedEmptyState" class="empty-state" style="display:none;">
+        <div class="empty-icon">🤝</div>
+        <div class="empty-title">Nothing shared yet</div>
+        <div class="empty-body">Open any card and tap Share to give family access</div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div id="view-account" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">Settings</div>
+          <div class="page-title">Account</div>
+        </div>
+      </div>
+
+      <div class="account-profile">
+        <div class="account-av" id="accountAvInitial">D</div>
+        <div>
+          <div class="account-name" id="accountName">Demo User</div>
+          <div class="account-email" id="accountEmail">demo@cardkeep.com</div>
+        </div>
+      </div>
+
+      <div class="upgrade-banner">
+        <div class="ub-tag">Coming Soon</div>
+        <h3>CardKeep Pro</h3>
+        <p>Unlimited cards, up to 10 family members, and smart balance alerts.</p>
+        <ul class="upgrade-features">
+          <li>Unlimited gift cards (free: 10)</li>
+          <li>Share with up to 10 family members</li>
+          <li>Balance refresh notifications</li>
+          <li>Receipt &amp; purchase history</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="btn-notify" onclick="showToast('You\'re on the list! 🎉')">Notify me at launch — it\'s free</button>
+      </div>
+
+      <div class="settings-cells">
+        <div class="settings-cell" onclick="showToast('Notifications saved ✓')">
+          <div class="sc-left">
+            <span class="sc-label">Notifications</span>
+            <span class="sc-sub">Alerts when family uses a card</span>
+          </div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="settings-cell" onclick="showToast('Plan: Free — $0/mo')">
+          <div class="sc-left">
+            <span class="sc-label">Current Plan</span>
+            <span class="sc-sub">Free — up to 10 cards</span>
+          </div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="settings-cell" onclick="showToast('Data encrypted & private 🔒')">
+          <div class="sc-left">
+            <span class="sc-label">Privacy &amp; Security</span>
+            <span class="sc-sub">Your data is end-to-end encrypted</span>
+          </div>
+          <span class="sc-arrow">›</span>
+        </div>
+        <div class="settings-cell" onclick="signOut()">
+          <div class="sc-left">
+            <span class="sc-label" style="color:var(--rose)">Sign Out</span>
+            <span class="sc-sub">Signed in as <span id="accountEmailSub">demo@cardkeep.com</span></span>
+          </div>
+          <span class="sc-arrow" style="color:var(--rose)">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-wallet" onclick="switchTab('wallet',this)">
+      <div class="nav-icon">🎴</div>
+      <span class="nav-label">Wallet</span>
+    </button>
+    <button class="nav-item" id="nav-shared" onclick="switchTab('shared',this)">
+      <div class="nav-icon">👥</div>
+      <span class="nav-label">Shared</span>
+    </button>
+    <button class="nav-item" id="nav-account" onclick="switchTab('account',this)">
+      <div class="nav-icon">⚙️</div>
+      <span class="nav-label">Account</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ ADD CARD SHEET ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="sheet-overlay" id="addModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Add Gift Card</span>
+      <button class="sheet-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="sheet-scroll">
+      <div class="form-section">
+        <label class="form-label">Store / Brand *</label>
+        <input class="form-input" type="text" id="cardStore" placeholder="e.g. Amazon, Target, Starbucks"/>
+      </div>
+      <div class="form-section">
+        <div class="form-row">
+          <div>
+            <label class="form-label">Card Number</label>
+            <input class="form-input" type="text" id="cardNumber" placeholder="1234 5678 9012"/>
+          </div>
+          <div>
+            <label class="form-label">PIN</label>
+            <input class="form-input" type="text" id="cardPin" placeholder="1234"/>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-row">
+          <div>
+            <label class="form-label">Balance ($) *</label>
+            <input class="form-input" type="number" id="cardBalance" placeholder="25.00" step="0.01"/>
+          </div>
+          <div>
+            <label class="form-label">Expires</label>
+            <input class="form-input" type="text" id="cardExpiry" placeholder="MM/YYYY"/>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <label class="form-label">Card Color</label>
+        <div class="color-row" id="colorSwatches">
+          <div class="cswatch sel" style="background:linear-gradient(135deg,#00E5B0,#B8A9FF)" data-color="linear-gradient(135deg,#00E5B0,#B8A9FF)" onclick="selectColor(this)"></div>
+          <div class="cswatch" style="background:linear-gradient(135deg,#059669,#34D399)" data-color="linear-gradient(135deg,#059669,#34D399)" onclick="selectColor(this)"></div>
+          <div class="cswatch" style="background:linear-gradient(135deg,#DC2626,#F97316)" data-color="linear-gradient(135deg,#DC2626,#F97316)" onclick="selectColor(this)"></div>
+          <div class="cswatch" style="background:linear-gradient(135deg,#1E1E2E,#3A3A5C)" data-color="linear-gradient(135deg,#1E1E2E,#3A3A5C)" onclick="selectColor(this)"></div>
+          <div class="cswatch" style="background:linear-gradient(135deg,#D97706,#E8C97A)" data-color="linear-gradient(135deg,#D97706,#E8C97A)" onclick="selectColor(this)"></div>
+          <div class="cswatch" style="background:linear-gradient(135deg,#BE185D,#FF6B8A)" data-color="linear-gradient(135deg,#BE185D,#FF6B8A)" onclick="selectColor(this)"></div>
+          <div class="cswatch" style="background:linear-gradient(135deg,#1D4ED8,#60A5FA)" data-color="linear-gradient(135deg,#1D4ED8,#60A5FA)" onclick="selectColor(this)"></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <label class="form-label">Card Back Photo / Barcode</label>
+        <div class="upload-tgt" id="uploadZone">
+          <input type="file" accept="image/*" id="cardImageInput" onchange="handleImageUpload(event)"/>
+          <div class="ut-icon">📷</div>
+          <p><strong>Tap to upload</strong></p>
+          <p>Photo of card back, barcode or UPC</p>
+        </div>
+        <img id="uploadPreview" class="upload-preview" alt="Card preview"/>
+      </div>
+      <div class="form-section" style="padding-bottom:8px;">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="cardNotes" rows="2" placeholder="e.g. Birthday gift from mom" style="resize:none;"></textarea>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-ghost" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-cta" onclick="saveCard()">Save Card</button>
+    </div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ DETAIL SHEET ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="sheet-overlay" id="detailModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-scroll">
+      <div id="detailBanner" class="detail-hero">
+        <div class="dh-name" id="detailStoreName"></div>
+        <div class="dh-num" id="detailCardNum"></div>
+      </div>
+
+      <div class="detail-rows">
+        <div class="detail-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+            <span class="dr-label">Balance</span>
+            <div id="balanceDisplay" style="display:flex;align-items:center;gap:8px;">
+              <span class="dr-val" id="detailBalance"></span>
+              <button class="bal-edit-btn" onclick="startEditBalance()">Edit</button>
+            </div>
+          </div>
+          <!-- Edit mode (hidden by default) -->
+          <div id="balanceEditor" style="display:none;width:100%;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:18px;color:var(--neon);font-family:'Syne Mono',monospace;">$</span>
+              <input class="balance-input" type="number" id="balanceEditInput" step="0.01" min="0" placeholder="0.00"/>
+              <button class="bal-save-btn" onclick="saveBalance()">Save</button>
+              <button class="bal-cancel-btn" onclick="cancelEditBalance()">Cancel</button>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:6px;">Quick Deduct</div>
+            <div class="quick-spend-row" id="quickSpendRow"></div>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="dr-label">Card Number</span>
+          <div class="dr-copy">
+            <span class="dr-val" id="detailFullNum"></span>
+            <button class="copy-btn" onclick="copyCardNumber()">Copy</button>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="dr-label">PIN</span>
+          <span class="dr-val" id="detailPin"></span>
+        </div>
+        <div class="detail-row">
+          <span class="dr-label">Expires</span>
+          <span class="dr-val" id="detailExpiry"></span>
+        </div>
+        <div class="detail-row">
+          <span class="dr-label">Notes</span>
+          <span class="dr-val" id="detailNotes" style="font-family:'Syne',sans-serif;font-size:13px;text-align:right;max-width:60%;"></span>
+        </div>
+      </div>
+
+      <!-- Photo panel -->
+      <div class="photo-panel">
+        <div class="photo-panel-title">Card Back / Barcode Photo</div>
+        <div id="detailPhotoWrap"></div>
+      </div>
+
+      <!-- Usage history -->
+      <div class="usage-panel">
+        <div class="usage-panel-title">Usage History</div>
+        <div class="usage-list" id="usageList"></div>
+      </div>
+
+      <!-- Share panel -->
+      <div class="share-panel" style="padding-bottom:20px;">
+        <div class="share-panel-title">Share this card</div>
+        <div class="share-input-row">
+          <input type="email" id="shareEmail" placeholder="family@email.com"/>
+          <button class="share-send-btn" onclick="shareCard()">Share</button>
+        </div>
+        <div class="shared-list" id="sharedUsersList"></div>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-ghost" onclick="closeDetailModal()">Close</button>
+      <button class="btn-cta" onclick="copyCardNumber()">Copy Number</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="photoLightbox" onclick="closeLightbox()">
+  <img id="lbImg" src="" alt="Card back"/>
+  <button onclick="closeLightbox()">✕ Close</button>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // ── STATE ──
+  let currentUser = null;
+  let cards = [];
+  let selectedColor = 'linear-gradient(135deg,#00E5B0,#B8A9FF)';
+  let currentDetailCard = null;
+  let usageHistory = {}; // keyed by card id
+
+  const sharedMembers = [{ name: 'Sarah', email: 'sarah@family.com', initials: 'S' }];
+
+  // ── AUTH ──
+  function initGoogleSignIn() {
+    if (typeof google === 'undefined') return;
+    google.accounts.id.initialize({
+      client_id: 'YOUR_GOOGLE_CLIENT_ID',
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('googleSignInBtn'),
+      { theme: 'outline', size: 'large', width: 320, text: 'continue_with', shape: 'rectangular', logo_alignment: 'center' }
+    );
+    google.accounts.id.prompt();
+  }
+
+  function handleGoogleCredential(response) {
+    if (!response.credential) { showToast('Sign-in failed. Try again.'); return; }
+    try {
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      const name = payload.name || payload.email.split('@')[0];
+      const email = payload.email || '';
+      const initials = name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+      currentUser = { name, email, initials, picture: payload.picture || null };
+      launchApp();
+    } catch(e) { showToast('Could not read sign-in info.'); }
+  }
+
+  function triggerGoogleSignIn() {
+    if (typeof google !== 'undefined') google.accounts.id.prompt();
+    else showToast('Google sign-in loading, please wait...');
+  }
+
+  window.onGoogleLibraryLoad = initGoogleSignIn;
+
+  function enterDemo() {
+    currentUser = { name: 'Jeremy', email: 'jeremy@cardkeep.com', initials: 'J' };
+    cards = [
+      { id:1, store:'Amazon', number:'6543 2109 8765 4321', pin:'7890', balance:47.50, expiry:'12/2027', color:'linear-gradient(135deg,#1E1E2E,#3A3A5C)', notes:'Birthday gift', sharedWith:['sarah@family.com'], image:null },
+      { id:2, store:'Starbucks', number:'6012 3456 7890 1234', pin:'', balance:18.75, expiry:'06/2026', color:'linear-gradient(135deg,#059669,#34D399)', notes:'', sharedWith:[], image:null },
+      { id:3, store:'Target', number:'4111 2222 3333 4444', pin:'1234', balance:100.00, expiry:'', color:'linear-gradient(135deg,#DC2626,#F97316)', notes:'Holiday shopping', sharedWith:['sarah@family.com'], image:null },
+    ];
+    usageHistory = {
+      1: [
+        { spent:52.50, newBal:47.50, note:'Spent $52.50 at Amazon', date:'May 28, 2026, 02:14 PM' },
+        { spent:0, newBal:100.00, note:'Balance set', date:'May 15, 2026, 10:00 AM' }
+      ],
+      2: [
+        { spent:6.25, newBal:18.75, note:'Spent $6.25 at Starbucks', date:'Jun 1, 2026, 08:42 AM' }
+      ]
+    };
+    launchApp();
+  }
+
+  function launchApp() {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('userAvatar').textContent = currentUser.initials;
+    document.getElementById('ownerInitial').textContent = currentUser.initials;
+    document.getElementById('accountAvInitial').textContent = currentUser.initials;
+    document.getElementById('accountName').textContent = currentUser.name;
+    document.getElementById('accountEmail').textContent = currentUser.email;
+    document.getElementById('accountEmailSub').textContent = currentUser.email;
+    renderCards(); renderSharedCards(); updateSummary();
+  }
+
+  function signOut() {
+    if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
+    currentUser = null; cards = [];
+    document.getElementById('landing').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    showToast('Signed out');
+  }
+
+  // ── TABS ──
+  function switchTab(view, el) {
+    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('view-' + view).classList.add('active');
+    document.querySelector('.scroll-area').scrollTop = 0;
+  }
+
+  // ── RENDER ──
+  function renderCards() {
+    const grid = document.getElementById('cardsGrid');
+    const empty = document.getElementById('emptyState');
+    if (!cards.length) { grid.innerHTML=''; empty.style.display='flex'; return; }
+    empty.style.display = 'none';
+    grid.innerHTML = cards.map(c => cardHTML(c)).join('');
+  }
+
+  function renderSharedCards() {
+    const grid = document.getElementById('sharedCardsGrid');
+    const empty = document.getElementById('sharedEmptyState');
+    const shared = cards.filter(c => c.sharedWith && c.sharedWith.length > 0);
+    if (!shared.length) { grid.innerHTML=''; empty.style.display='flex'; return; }
+    empty.style.display = 'none';
+    grid.innerHTML = shared.map(c => cardHTML(c)).join('');
+  }
+
+  function cardHTML(card) {
+    const masked = card.number ? '•••• ' + card.number.replace(/\s/g,'').slice(-4) : 'No number';
+    return `<div class="gift-card" onclick="openDetailModal(${card.id})">
+      <div class="gc-banner" style="background:${card.color}">
+        <div class="gc-shimmer"></div>
+        <div class="gc-name">${card.store}</div>
+      </div>
+      <div class="gc-body">
+        <div class="gc-num">${masked}</div>
+        <div class="gc-balance-wrap">
+          <div class="gc-balance">$${parseFloat(card.balance).toFixed(2)}</div>
+          <div class="gc-balance-lbl">balance</div>
+        </div>
+      </div>
+      <div class="gc-footer">
+        ${card.sharedWith && card.sharedWith.length ? `<div class="shared-chip">👥 ${card.sharedWith.length} shared</div>` : '<div></div>'}
+        <div class="gc-actions">
+          <button class="gc-act-btn gc-act-view" onclick="event.stopPropagation();openDetailModal(${card.id})">View</button>
+          <button class="gc-act-btn gc-act-del" onclick="event.stopPropagation();deleteCard(${card.id})">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function updateSummary() {
+    document.getElementById('totalCards').textContent = cards.length;
+    const total = cards.reduce((s,c) => s + parseFloat(c.balance||0), 0);
+    document.getElementById('totalValue').textContent = total.toFixed(2);
+    const people = new Set(cards.flatMap(c => c.sharedWith||[]));
+    document.getElementById('totalShared').textContent = people.size;
+  }
+
+  // ── ADD MODAL ──
+  function openAddModal() {
+    document.getElementById('addModal').classList.add('open');
+    setTimeout(() => document.getElementById('cardStore').focus(), 400);
+  }
+  function closeAddModal() {
+    document.getElementById('addModal').classList.remove('open');
+    clearForm();
+  }
+  function clearForm() {
+    ['cardStore','cardNumber','cardPin','cardBalance','cardExpiry','cardNotes'].forEach(id => { document.getElementById(id).value=''; });
+    document.getElementById('uploadPreview').style.display='none';
+    document.getElementById('uploadPreview').src='';
+    selectedColor = 'linear-gradient(135deg,#00E5B0,#B8A9FF)';
+    document.querySelectorAll('.cswatch').forEach((s,i) => s.classList.toggle('sel', i===0));
+  }
+  function selectColor(el) {
+    document.querySelectorAll('.cswatch').forEach(s => s.classList.remove('sel'));
+    el.classList.add('sel');
+    selectedColor = el.dataset.color;
+  }
+  function handleImageUpload(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const p = document.getElementById('uploadPreview');
+      p.src = ev.target.result; p.style.display='block';
+    };
+    reader.readAsDataURL(file);
+  }
+  function saveCard() {
+    const store = document.getElementById('cardStore').value.trim();
+    if (!store) { showToast('Please enter a store name ⚠️'); return; }
+    const balance = document.getElementById('cardBalance').value;
+    if (!balance || isNaN(balance)) { showToast('Please enter a balance ⚠️'); return; }
+    const prev = document.getElementById('uploadPreview');
+    cards.unshift({
+      id: Date.now(), store,
+      number: document.getElementById('cardNumber').value.trim(),
+      pin: document.getElementById('cardPin').value.trim(),
+      balance: parseFloat(balance),
+      expiry: document.getElementById('cardExpiry').value.trim(),
+      color: selectedColor,
+      notes: document.getElementById('cardNotes').value.trim(),
+      sharedWith: [],
+      image: prev.src && prev.style.display!=='none' ? prev.src : null
+    });
+    renderCards(); renderSharedCards(); updateSummary();
+    closeAddModal();
+    showToast('🎉 ' + store + ' added to wallet!');
+  }
+  function deleteCard(id) {
+    if (!confirm('Remove this card?')) return;
+    cards = cards.filter(c => c.id !== id);
+    renderCards(); renderSharedCards(); updateSummary();
+    showToast('Card removed');
+  }
+
+  // ── DETAIL MODAL ──
+  function openDetailModal(id) {
+    currentDetailCard = cards.find(c => c.id === id);
+    if (!currentDetailCard) return;
+    const c = currentDetailCard;
+    document.getElementById('detailBanner').style.background = c.color;
+    document.getElementById('detailStoreName').textContent = c.store;
+    document.getElementById('detailCardNum').textContent = c.number ? '•••• ' + c.number.replace(/\s/g,'').slice(-4) : '';
+    document.getElementById('detailBalance').textContent = '$' + parseFloat(c.balance).toFixed(2);
+    // Reset editor
+    document.getElementById('balanceEditor').style.display = 'none';
+    document.getElementById('balanceDisplay').style.display = 'flex';
+    // Quick spend buttons
+    const bal = parseFloat(c.balance);
+    const qsr = document.getElementById('quickSpendRow');
+    const presets = [1, 5, 10, 20, 25].filter(v => v < bal);
+    qsr.innerHTML = presets.map(v => `<button class="qs-btn" onclick="quickDeduct(${v})">-$${v}</button>`).join('') +
+      `<button class="qs-btn" onclick="quickDeductCustom()">Used it all</button>`;
+    // Usage history
+    const history = usageHistory[c.id] || [];
+    const ul = document.getElementById('usageList');
+    if (!history.length) {
+      ul.innerHTML = '<div class="no-history">No usage recorded yet</div>';
+    } else {
+      ul.innerHTML = history.slice().reverse().map(h => `
+        <div class="usage-row">
+          <div class="ur-left">
+            <span class="ur-note">${h.note}</span>
+            <span class="ur-date">${h.date}</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="ur-amount">-$${h.spent.toFixed(2)}</div>
+            <div class="ur-balance">→ $${h.newBal.toFixed(2)}</div>
+          </div>
+        </div>`).join('');
+    }
+    document.getElementById('detailFullNum').textContent = c.number || '—';
+    document.getElementById('detailPin').textContent = c.pin || '—';
+    document.getElementById('detailExpiry').textContent = c.expiry || '—';
+    document.getElementById('detailNotes').textContent = c.notes || '—';
+
+    // Photo
+    const pw = document.getElementById('detailPhotoWrap');
+    if (c.image) {
+      pw.innerHTML = `<img class="card-photo-img" src="${c.image}" alt="Card back"/>
+        <div class="photo-actions">
+          <button class="ph-btn ph-view" onclick="openLightbox('${c.image}')">🔍 Full</button>
+          <button class="ph-btn ph-replace">📷 Replace<input type="file" accept="image/*" onchange="replaceCardPhoto(event,${c.id})"/></button>
+          <button class="ph-btn ph-del" onclick="removeCardPhoto(${c.id})">🗑 Remove</button>
+        </div>`;
+    } else {
+      pw.innerHTML = `<div class="upload-tgt" style="padding:20px;">
+        <input type="file" accept="image/*" onchange="addCardPhoto(event,${c.id})"/>
+        <div class="ut-icon">📷</div>
+        <p><strong>Add photo</strong></p>
+        <p>Card back, barcode or UPC</p>
+      </div>`;
+    }
+
+    // Shared users
+    const list = document.getElementById('sharedUsersList');
+    list.innerHTML = (c.sharedWith||[]).map(email => `
+      <div class="shared-row">
+        <div class="sr-av">${email[0].toUpperCase()}</div>
+        <span class="sr-email">${email}</span>
+        <button class="sr-remove" onclick="removeSharedUser('${email}')">✕ Remove</button>
+      </div>`).join('');
+
+    document.getElementById('detailModal').classList.add('open');
+  }
+
+  function closeDetailModal() {
+    document.getElementById('detailModal').classList.remove('open');
+    currentDetailCard = null;
+  }
+  function shareCard() {
+    const email = document.getElementById('shareEmail').value.trim();
+    if (!email || !email.includes('@')) { showToast('Enter a valid email ⚠️'); return; }
+    if (!currentDetailCard) return;
+    if (currentDetailCard.sharedWith.includes(email)) { showToast('Already shared'); return; }
+    currentDetailCard.sharedWith.push(email);
+    document.getElementById('shareEmail').value = '';
+    openDetailModal(currentDetailCard.id);
+    renderCards(); renderSharedCards(); updateSummary();
+    showToast('📨 Shared with ' + email);
+  }
+  function removeSharedUser(email) {
+    if (!currentDetailCard) return;
+    currentDetailCard.sharedWith = currentDetailCard.sharedWith.filter(e => e !== email);
+    openDetailModal(currentDetailCard.id);
+    renderCards(); renderSharedCards(); updateSummary();
+    showToast('Access removed');
+  }
+  // ── BALANCE EDITING ──
+  function startEditBalance() {
+    if (!currentDetailCard) return;
+    document.getElementById('balanceDisplay').style.display = 'none';
+    document.getElementById('balanceEditor').style.display = 'block';
+    const inp = document.getElementById('balanceEditInput');
+    inp.value = parseFloat(currentDetailCard.balance).toFixed(2);
+    inp.focus();
+    inp.select();
+  }
+
+  function cancelEditBalance() {
+    document.getElementById('balanceEditor').style.display = 'none';
+    document.getElementById('balanceDisplay').style.display = 'flex';
+  }
+
+  function saveBalance(newVal, note) {
+    if (!currentDetailCard) return;
+    const inp = document.getElementById('balanceEditInput');
+    const val = newVal !== undefined ? newVal : parseFloat(inp.value);
+    if (isNaN(val) || val < 0) { showToast('Enter a valid balance ⚠️'); return; }
+    const oldBal = parseFloat(currentDetailCard.balance);
+    const spent = Math.max(0, oldBal - val);
+    currentDetailCard.balance = val;
+    // Record history
+    if (!usageHistory[currentDetailCard.id]) usageHistory[currentDetailCard.id] = [];
+    if (spent > 0 || (newVal !== undefined)) {
+      usageHistory[currentDetailCard.id].push({
+        spent: spent,
+        newBal: val,
+        note: note || (spent > 0 ? 'Balance updated' : 'Balance set'),
+        date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
+      });
+    }
+    renderCards(); renderSharedCards(); updateSummary();
+    openDetailModal(currentDetailCard.id);
+    showToast('Balance updated to $' + val.toFixed(2) + ' ✓');
+  }
+
+  function quickDeduct(amount) {
+    if (!currentDetailCard) return;
+    const newBal = Math.max(0, parseFloat(currentDetailCard.balance) - amount);
+    const note = 'Spent $' + amount.toFixed(2) + ' at ' + currentDetailCard.store;
+    const old = currentDetailCard.balance;
+    currentDetailCard.balance = newBal;
+    if (!usageHistory[currentDetailCard.id]) usageHistory[currentDetailCard.id] = [];
+    usageHistory[currentDetailCard.id].push({
+      spent: amount,
+      newBal,
+      note,
+      date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
+    });
+    renderCards(); renderSharedCards(); updateSummary();
+    openDetailModal(currentDetailCard.id);
+    showToast('-$' + amount.toFixed(2) + ' → $' + newBal.toFixed(2) + ' remaining');
+  }
+
+  function quickDeductCustom() {
+    if (!currentDetailCard) return;
+    const bal = parseFloat(currentDetailCard.balance);
+    quickDeduct(bal);
+  }
+
+  function copyCardNumber() {
+    if (!currentDetailCard || !currentDetailCard.number) { showToast('No number saved'); return; }
+    navigator.clipboard.writeText(currentDetailCard.number.replace(/\s/g,'')).then(() => showToast('📋 Copied!')).catch(() => showToast('📋 ' + currentDetailCard.number));
+  }
+
+  // ── CARD PHOTO ──
+  function addCardPhoto(event, id) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const card = cards.find(c => c.id === id);
+      if (card) { card.image = ev.target.result; openDetailModal(id); renderCards(); showToast('📷 Photo saved!'); }
+    };
+    reader.readAsDataURL(file);
+  }
+  function replaceCardPhoto(event, id) { addCardPhoto(event, id); }
+  function removeCardPhoto(id) {
+    const card = cards.find(c => c.id === id);
+    if (card) { card.image = null; openDetailModal(id); showToast('Photo removed'); }
+  }
+  function openLightbox(src) {
+    document.getElementById('lbImg').src = src;
+    document.getElementById('photoLightbox').classList.add('open');
+  }
+  function closeLightbox() { document.getElementById('photoLightbox').classList.remove('open'); }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // close sheets on overlay tap
+  document.getElementById('addModal').addEventListener('click', function(e) { if (e.target===this) closeAddModal(); });
+  document.getElementById('detailModal').addEventListener('click', function(e) { if (e.target===this) closeDetailModal(); });
+</script>
+</body>
+</html>
