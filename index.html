@@ -1113,31 +1113,32 @@ body {
         <div class="account-info">
           <div class="account-name" id="accountName">Jeremy</div>
           <div class="account-email" id="accountEmail">jeremy@cardkeep.com</div>
-          <div class="account-plan-badge">✦ Free Plan</div>
+          <div class="account-plan-badge" id="planBadge">✦ Free Plan</div>
         </div>
       </div>
 
-      <div class="upgrade-banner">
-        <div class="ub-tag">✦ Coming Soon</div>
-        <h3>CardKeep Pro</h3>
-        <p>Unlimited cards, up to 10 family members, and smart balance alerts — all in one beautiful wallet.</p>
+      <div class="upgrade-banner" id="upgradeBanner">
+        <div class="ub-tag">⚡ Upgrade</div>
+        <h3>CardKeep Pro — $0.99/mo</h3>
+        <p>Unlock unlimited cards and real-time family sharing for less than a dollar a month.</p>
         <ul class="upgrade-features">
-          <li>Unlimited gift cards (free plan: 10)</li>
-          <li>Share with up to 10 family members</li>
-          <li>Low balance notifications</li>
-          <li>Receipt & purchase history</li>
-          <li>Priority support</li>
+          <li>Unlimited gift cards (free: 2)</li>
+          <li>Share cards with family & friends</li>
+          <li>Real-time balance sync across devices</li>
+          <li>Full usage history</li>
         </ul>
-        <button class="btn-notify" onclick="showToast('You\'re on the list! 🎉')">Notify me at launch — it\'s free</button>
+        <button class="btn-notify" onclick="showUpgradeModal('card')">Upgrade to Pro →</button>
       </div>
+
+      <button id="manageSubBtn" style="display:none;margin:0 20px 16px;width:calc(100% - 40px);padding:14px;border-radius:14px;background:var(--p-ghost);color:var(--p-deep);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;border:none;cursor:pointer;" onclick="window.open('https://billing.stripe.com/p/login/REPLACE_WITH_PORTAL_LINK','_blank')">Manage Subscription →</button>
 
       <div class="settings-cells">
         <div class="settings-cell" onclick="showToast('Preferences saved ✓')">
           <div class="sc-left"><span class="sc-label">Notifications</span><span class="sc-sub">Alerts when family uses a card</span></div>
           <span class="sc-arr">›</span>
         </div>
-        <div class="settings-cell" onclick="showToast('Free plan — $0/mo')">
-          <div class="sc-left"><span class="sc-label">Current Plan</span><span class="sc-sub">Free — up to 10 cards</span></div>
+        <div class="settings-cell" id="planCell" onclick="isPro() ? null : showUpgradeModal('card')">
+          <div class="sc-left"><span class="sc-label">Current Plan</span><span class="sc-sub">Free — up to 2 cards, no sharing</span></div>
           <span class="sc-arr">›</span>
         </div>
         <div class="settings-cell" onclick="showToast('Your data is encrypted 🔒')">
@@ -1168,7 +1169,37 @@ body {
   </nav>
 </div>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━ ADD CARD SHEET ━━━━━━━━━━━━━━━━━━━━ -->
+<!-- ━━━━━━━━━━━━━━━━━━━━ UPGRADE MODAL ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="sheet-overlay" id="upgradeModal" onclick="if(event.target===this)closeUpgradeModal()">
+  <div class="sheet" style="padding-bottom:32px;">
+    <div class="sheet-handle"></div>
+    <div style="padding:24px 24px 0;text-align:center;">
+      <div style="font-size:48px;margin-bottom:8px;">⚡</div>
+      <h2 style="font-family:'Fraunces',serif;font-size:26px;color:var(--text);margin:0 0 8px;">Go Pro</h2>
+      <p id="upgradeReason" style="font-size:14px;color:var(--text2);margin:0 0 20px;line-height:1.5;">Upgrade to unlock all features.</p>
+      <div style="background:var(--p-ghost);border-radius:16px;padding:20px;margin-bottom:20px;text-align:left;">
+        <div style="font-size:28px;font-weight:800;color:var(--p-deep);font-family:'Fraunces',serif;">$0.99<span style="font-size:15px;font-weight:600;color:var(--text3)">/month</span></div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px;">Cancel anytime</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);font-weight:600;">
+            <span style="color:#7C3AED">✓</span> Unlimited gift cards
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);font-weight:600;">
+            <span style="color:#7C3AED">✓</span> Share with family & friends
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);font-weight:600;">
+            <span style="color:#7C3AED">✓</span> Real-time sync across devices
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);font-weight:600;">
+            <span style="color:#7C3AED">✓</span> Full usage history
+          </div>
+        </div>
+      </div>
+      <button onclick="startUpgrade()" style="width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#6B21A8,#9333EA,#EC4899);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;border:none;cursor:pointer;margin-bottom:12px;">Upgrade for $0.99/mo →</button>
+      <button onclick="closeUpgradeModal()" style="width:100%;padding:14px;border-radius:14px;background:var(--bg);color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;border:1.5px solid var(--border2);cursor:pointer;">Maybe later</button>
+    </div>
+  </div>
+</div>
 <div class="sheet-overlay" id="addModal">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -1278,9 +1309,11 @@ body {
 
       <div class="share-panel" style="padding-bottom:20px;">
         <div class="share-panel-title">Share This Card</div>
-        <div class="share-input-row">
-          <input type="email" id="shareEmail" placeholder="family@email.com"/>
-          <button class="share-send-btn" onclick="shareCard()">Share</button>
+        <div id="shareInputSection">
+          <div class="share-input-row">
+            <input type="email" id="shareEmail" placeholder="family@email.com"/>
+            <button class="share-send-btn" onclick="shareCard()">Share</button>
+          </div>
         </div>
         <div class="shared-list" id="sharedUsersList"></div>
       </div>
@@ -1319,6 +1352,12 @@ body {
   let _unsubOwned = null;
   let _unsubShared = null;
   let _isDemo = false;
+  let _isPro = false; // true when user has active Stripe subscription
+
+  const FREE_CARD_LIMIT = 2;
+  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/REPLACE_WITH_YOUR_STRIPE_LINK'; // ← paste your Stripe link here
+
+  function isPro() { return _isPro || _isDemo; } // demo gets full access for testing
 
   window._startFirestoreSync = function(uid, email) {
     const { db, onSnapshot, collection, query, where, getDocs } = window._fb;
@@ -1336,6 +1375,17 @@ body {
       });
       renderCards(); renderSharedCards(); updateSummary();
     }).catch(e => console.error('Card load error:', e));
+
+    // Load pro subscription status
+    getDoc(doc(db, 'users', uid, 'subscription', 'status')).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        _isPro = data.status === 'active' && new Date(data.currentPeriodEnd?.toDate?.() || 0) > new Date();
+      } else {
+        _isPro = false;
+      }
+      updateAccountUI();
+    }).catch(() => { _isPro = false; updateAccountUI(); });
 
     // 2. Live listener ONLY for cards shared with this user by others
     const sharedRef = query(collection(db, 'sharedCards'), where('sharedWith', 'array-contains', email));
@@ -1430,6 +1480,43 @@ body {
     document.getElementById('accountEmailSub').textContent = currentUser.email;
     renderCards(); renderSharedCards(); updateSummary();
   };
+
+  function showUpgradeModal(reason) {
+    const msg = reason === 'card'
+      ? 'You\'ve reached the 2-card limit on the free plan.'
+      : 'Sharing cards is a Pro feature.';
+    document.getElementById('upgradeReason').textContent = msg;
+    document.getElementById('upgradeModal').classList.add('open');
+  }
+  function closeUpgradeModal() {
+    document.getElementById('upgradeModal').classList.remove('open');
+  }
+  function startUpgrade() {
+    closeUpgradeModal();
+    if (!currentUser) return;
+    const url = STRIPE_PAYMENT_LINK + '?prefilled_email=' + encodeURIComponent(currentUser.email) + '&client_reference_id=' + encodeURIComponent(currentUser.uid);
+    window.open(url, '_blank');
+    showToast('Complete payment in the new tab — then refresh the app ✓');
+  }
+  function updateAccountUI() {
+    const badge = document.getElementById('planBadge');
+    const planCell = document.getElementById('planCell');
+    const upgradeBanner = document.getElementById('upgradeBanner');
+    const manageBtn = document.getElementById('manageSubBtn');
+    if (_isPro) {
+      if (badge) badge.textContent = '⚡ Pro';
+      if (badge) badge.style.background = 'linear-gradient(135deg,#6B21A8,#EC4899)';
+      if (badge) badge.style.color = '#fff';
+      if (planCell) planCell.querySelector('.sc-sub').textContent = 'Pro — $0.99/mo · Unlimited cards & sharing';
+      if (upgradeBanner) upgradeBanner.style.display = 'none';
+      if (manageBtn) manageBtn.style.display = 'block';
+    } else {
+      if (badge) badge.textContent = '✦ Free Plan';
+      if (planCell) planCell.querySelector('.sc-sub').textContent = 'Free — up to 2 cards, no sharing';
+      if (upgradeBanner) upgradeBanner.style.display = 'block';
+      if (manageBtn) manageBtn.style.display = 'none';
+    }
+  }
 
   function signOut() {
     if (_unsubOwned) { _unsubOwned(); _unsubOwned = null; }
@@ -1542,6 +1629,10 @@ body {
     reader.readAsDataURL(file);
   }
   function saveCard() {
+    if (!isPro() && cards.length >= FREE_CARD_LIMIT) {
+      showUpgradeModal('card');
+      return;
+    }
     const store = document.getElementById('cardStore').value.trim();
     if (!store) { showToast('Please enter a store name ⚠️'); return; }
     const balance = document.getElementById('cardBalance').value;
@@ -1630,12 +1721,28 @@ body {
       <button class="sr-remove" onclick="removeSharedUser('${email}')">✕ Remove</button>
     </div>`).join('');
 
+    // Show/hide share input based on plan
+    const shareSection = document.getElementById('shareInputSection');
+    if (!isPro()) {
+      shareSection.innerHTML = `<div onclick="showUpgradeModal('share')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--p-ghost);border-radius:14px;cursor:pointer;border:1.5px dashed var(--purple);">
+        <span style="font-size:20px;">⚡</span>
+        <div><div style="font-size:13px;font-weight:700;color:var(--p-deep)">Upgrade to share cards</div><div style="font-size:11px;color:var(--text3)">Pro plan — $0.99/mo</div></div>
+        <span style="margin-left:auto;font-size:18px;">›</span>
+      </div>`;
+    } else {
+      shareSection.innerHTML = `<div class="share-row">
+        <input id="shareEmail" type="email" placeholder="family@email.com" class="share-input"/>
+        <button class="share-btn" onclick="shareCard()">Share 💝</button>
+      </div>`;
+    }
+
     document.getElementById('detailModal').classList.add('open');
   }
 
   function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); currentDetailCard = null; }
 
   function shareCard() {
+    if (!isPro()) { showUpgradeModal('share'); return; }
     const email = document.getElementById('shareEmail').value.trim();
     if (!email || !email.includes('@')) { showToast('Enter a valid email ⚠️'); return; }
     if (!currentDetailCard) return;
