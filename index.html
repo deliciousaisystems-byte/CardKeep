@@ -20,7 +20,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithCredential, signOut as fbSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, where, updateDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCkPKworjd3Ks-O4n2Zsmw-U_daCTMlLFI",
@@ -37,7 +37,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Expose to global scope so non-module script can call them
-window._fb = { auth, db, GoogleAuthProvider, signInWithCredential, fbSignOut, onSnapshot, doc, setDoc, deleteDoc, collection, query, where, updateDoc, getDoc };
+window._fb = { auth, db, GoogleAuthProvider, signInWithCredential, fbSignOut, onSnapshot, doc, setDoc, deleteDoc, collection, query, where, updateDoc, getDoc, getDocs };
 
 // Watch auth state — if user is already signed in (e.g. page refresh), restore session
 onAuthStateChanged(auth, async (user) => {
@@ -1320,30 +1320,24 @@ body {
   let _unsubShared = null;
   let _isDemo = false;
 
-  // ── FIRESTORE SYNC ──
-  let _pendingWrite = false; // guard against snapshot overwriting during active saves
-
   window._startFirestoreSync = function(uid, email) {
-    const { db, onSnapshot, collection, query, where, doc } = window._fb;
+    const { db, onSnapshot, collection, query, where, getDocs } = window._fb;
 
     // Unsubscribe any previous listeners
     if (_unsubOwned) _unsubOwned();
     if (_unsubShared) _unsubShared();
 
-    // 1. Listen to this user's own cards
-    const ownedRef = collection(db, 'users', uid, 'cards');
-    _unsubOwned = onSnapshot(ownedRef, (snap) => {
-      if (_pendingWrite) return; // don't overwrite while a save is in flight
+    // 1. Load this user's own cards ONCE on login (no live listener — avoids race conditions)
+    getDocs(collection(db, 'users', uid, 'cards')).then((snap) => {
       cards = snap.docs.map(d => ({ ...d.data(), _firestoreId: d.id }));
-      // Restore usageHistory from embedded field
       usageHistory = {};
       cards.forEach(c => {
         if (c.usageHistory) usageHistory[c.id] = c.usageHistory;
       });
       renderCards(); renderSharedCards(); updateSummary();
-    });
+    }).catch(e => console.error('Card load error:', e));
 
-    // 2. Listen to cards shared with this user's email
+    // 2. Live listener ONLY for cards shared with this user by others
     const sharedRef = query(collection(db, 'sharedCards'), where('sharedWith', 'array-contains', email));
     _unsubShared = onSnapshot(sharedRef, (snap) => {
       sharedWithMeCards = snap.docs.map(d => ({ ...d.data(), _firestoreId: d.id, _sharedWithMe: true }));
@@ -1355,11 +1349,9 @@ body {
   async function _saveCardToFirestore(card) {
     if (_isDemo || !currentUser || !currentUser.uid) return;
     const { db, doc, setDoc } = window._fb;
-    _pendingWrite = true;
     try {
       const cardData = { ...card, usageHistory: usageHistory[card.id] || [] };
       await setDoc(doc(db, 'users', currentUser.uid, 'cards', String(card.id)), cardData);
-      // If shared, also write to sharedCards collection for cross-user access
       if (card.sharedWith && card.sharedWith.length > 0) {
         await setDoc(doc(db, 'sharedCards', String(card.id)), {
           ...cardData,
@@ -1367,8 +1359,9 @@ body {
           ownerEmail: currentUser.email,
         });
       }
-    } finally {
-      _pendingWrite = false;
+    } catch(e) {
+      console.error('Firestore save error:', e);
+      showToast('⚠️ Could not save to cloud. Check your connection.');
     }
   }
 
