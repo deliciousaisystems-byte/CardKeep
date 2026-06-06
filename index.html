@@ -1321,6 +1321,8 @@ body {
   let _isDemo = false;
 
   // ── FIRESTORE SYNC ──
+  let _pendingWrite = false; // guard against snapshot overwriting during active saves
+
   window._startFirestoreSync = function(uid, email) {
     const { db, onSnapshot, collection, query, where, doc } = window._fb;
 
@@ -1331,6 +1333,7 @@ body {
     // 1. Listen to this user's own cards
     const ownedRef = collection(db, 'users', uid, 'cards');
     _unsubOwned = onSnapshot(ownedRef, (snap) => {
+      if (_pendingWrite) return; // don't overwrite while a save is in flight
       cards = snap.docs.map(d => ({ ...d.data(), _firestoreId: d.id }));
       // Restore usageHistory from embedded field
       usageHistory = {};
@@ -1352,15 +1355,20 @@ body {
   async function _saveCardToFirestore(card) {
     if (_isDemo || !currentUser || !currentUser.uid) return;
     const { db, doc, setDoc } = window._fb;
-    const cardData = { ...card, usageHistory: usageHistory[card.id] || [] };
-    await setDoc(doc(db, 'users', currentUser.uid, 'cards', String(card.id)), cardData);
-    // If shared, also write to sharedCards collection for cross-user access
-    if (card.sharedWith && card.sharedWith.length > 0) {
-      await setDoc(doc(db, 'sharedCards', String(card.id)), {
-        ...cardData,
-        ownerUid: currentUser.uid,
-        ownerEmail: currentUser.email,
-      });
+    _pendingWrite = true;
+    try {
+      const cardData = { ...card, usageHistory: usageHistory[card.id] || [] };
+      await setDoc(doc(db, 'users', currentUser.uid, 'cards', String(card.id)), cardData);
+      // If shared, also write to sharedCards collection for cross-user access
+      if (card.sharedWith && card.sharedWith.length > 0) {
+        await setDoc(doc(db, 'sharedCards', String(card.id)), {
+          ...cardData,
+          ownerUid: currentUser.uid,
+          ownerEmail: currentUser.email,
+        });
+      }
+    } finally {
+      _pendingWrite = false;
     }
   }
 
