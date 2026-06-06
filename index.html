@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━
    RESEARCH-BACKED PALETTE
@@ -1263,6 +1264,16 @@ body {
 <div id="toast"></div>
 
 <script>
+  // ── EMAILJS INIT ──
+  (function() {
+    if (typeof emailjs !== 'undefined') {
+      emailjs.init({ publicKey: 'we_zAEf1SKCyjAxbg' });
+    }
+  })();
+
+  const EMAILJS_SERVICE  = 'service_4s14i0i';
+  const EMAILJS_TEMPLATE = 'template_n9saq2p';
+
   let currentUser = null;
   let cards = [];
   let selectedColor = 'linear-gradient(135deg,#6B21A8,#9333EA,#EC4899)';
@@ -1520,11 +1531,36 @@ body {
     if (!email || !email.includes('@')) { showToast('Enter a valid email ⚠️'); return; }
     if (!currentDetailCard) return;
     if (currentDetailCard.sharedWith.includes(email)) { showToast('Already shared with this person'); return; }
+
     currentDetailCard.sharedWith.push(email);
     document.getElementById('shareEmail').value = '';
     openDetailModal(currentDetailCard.id);
     renderCards(); renderSharedCards(); updateSummary();
-    showToast('💝 Shared with ' + email);
+
+    // Send email notification via EmailJS
+    showToast('💝 Sharing with ' + email + '...');
+    const templateParams = {
+      to_email:    email,
+      from_name:   currentUser ? currentUser.name  : 'A CardKeep user',
+      from_email:  currentUser ? currentUser.email : '',
+      store_name:  currentDetailCard.store,
+      balance:     '$' + parseFloat(currentDetailCard.balance).toFixed(2),
+      card_last4:  currentDetailCard.number ? currentDetailCard.number.replace(/\s/g,'').slice(-4) : '—',
+      app_url:     window.location.href,
+    };
+
+    if (typeof emailjs !== 'undefined') {
+      emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, templateParams)
+        .then(() => {
+          showToast('💝 Notification sent to ' + email + '!');
+        })
+        .catch((err) => {
+          console.warn('EmailJS error:', err);
+          showToast('Card shared! (Email notification failed — check EmailJS config)');
+        });
+    } else {
+      showToast('💝 Shared with ' + email + ' (EmailJS not loaded)');
+    }
   }
   function removeSharedUser(email) {
     if (!currentDetailCard) return;
