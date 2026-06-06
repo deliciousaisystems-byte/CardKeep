@@ -15,6 +15,42 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithCredential, signOut as fbSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCkPKworjd3Ks-O4n2Zsmw-U_daCTMlLFI",
+  authDomain: "cardkeep-498302.firebaseapp.com",
+  projectId: "cardkeep-498302",
+  storageBucket: "cardkeep-498302.firebasestorage.app",
+  messagingSenderId: "46259404683",
+  appId: "1:46259404683:web:c78dceb30d26f4c03a798e",
+  measurementId: "G-N8EY8MC9PS"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Expose to global scope so non-module script can call them
+window._fb = { auth, db, GoogleAuthProvider, signInWithCredential, fbSignOut, onSnapshot, doc, setDoc, deleteDoc, collection, query, where, updateDoc, getDoc };
+
+// Watch auth state — if user is already signed in (e.g. page refresh), restore session
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const name = user.displayName || user.email.split('@')[0];
+    const email = user.email;
+    const initials = name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+    window.currentUser = { name, email, initials, uid: user.uid };
+    window._startFirestoreSync(user.uid, email);
+    window.launchApp();
+  }
+});
+</script>
 <style>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━
    RESEARCH-BACKED PALETTE
@@ -1274,11 +1310,66 @@ body {
   const EMAILJS_SERVICE  = 'service_4s14i0i';
   const EMAILJS_TEMPLATE = 'template_n9saq2p';
 
-  let currentUser = null;
+  window.currentUser = null;
   let cards = [];
+  let sharedWithMeCards = []; // cards owned by others, shared to currentUser
   let selectedColor = 'linear-gradient(135deg,#6B21A8,#9333EA,#EC4899)';
   let currentDetailCard = null;
   let usageHistory = {};
+  let _unsubOwned = null;
+  let _unsubShared = null;
+  let _isDemo = false;
+
+  // ── FIRESTORE SYNC ──
+  window._startFirestoreSync = function(uid, email) {
+    const { db, onSnapshot, collection, query, where, doc } = window._fb;
+
+    // Unsubscribe any previous listeners
+    if (_unsubOwned) _unsubOwned();
+    if (_unsubShared) _unsubShared();
+
+    // 1. Listen to this user's own cards
+    const ownedRef = collection(db, 'users', uid, 'cards');
+    _unsubOwned = onSnapshot(ownedRef, (snap) => {
+      cards = snap.docs.map(d => ({ ...d.data(), _firestoreId: d.id }));
+      // Restore usageHistory from embedded field
+      usageHistory = {};
+      cards.forEach(c => {
+        if (c.usageHistory) usageHistory[c.id] = c.usageHistory;
+      });
+      renderCards(); renderSharedCards(); updateSummary();
+    });
+
+    // 2. Listen to cards shared with this user's email
+    const sharedRef = query(collection(db, 'sharedCards'), where('sharedWith', 'array-contains', email));
+    _unsubShared = onSnapshot(sharedRef, (snap) => {
+      sharedWithMeCards = snap.docs.map(d => ({ ...d.data(), _firestoreId: d.id, _sharedWithMe: true }));
+      renderSharedCards(); updateSummary();
+    });
+  };
+
+  // ── FIRESTORE WRITE HELPERS ──
+  async function _saveCardToFirestore(card) {
+    if (_isDemo || !currentUser || !currentUser.uid) return;
+    const { db, doc, setDoc } = window._fb;
+    const cardData = { ...card, usageHistory: usageHistory[card.id] || [] };
+    await setDoc(doc(db, 'users', currentUser.uid, 'cards', String(card.id)), cardData);
+    // If shared, also write to sharedCards collection for cross-user access
+    if (card.sharedWith && card.sharedWith.length > 0) {
+      await setDoc(doc(db, 'sharedCards', String(card.id)), {
+        ...cardData,
+        ownerUid: currentUser.uid,
+        ownerEmail: currentUser.email,
+      });
+    }
+  }
+
+  async function _deleteCardFromFirestore(id) {
+    if (_isDemo || !currentUser || !currentUser.uid) return;
+    const { db, doc, deleteDoc } = window._fb;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'cards', String(id)));
+    try { await deleteDoc(doc(db, 'sharedCards', String(id))); } catch(e) {}
+  }
 
   // ── AUTH ──
   function initGoogleSignIn() {
@@ -1298,20 +1389,20 @@ body {
 
   function handleGoogleCredential(response) {
     if (!response.credential) { showToast('Sign-in failed. Try again.'); return; }
-    try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      const name = payload.name || payload.email.split('@')[0];
-      const email = payload.email || '';
-      const initials = name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
-      currentUser = { name, email, initials };
-      launchApp();
-    } catch(e) { showToast('Could not read sign-in info.'); }
+    const { auth, GoogleAuthProvider, signInWithCredential } = window._fb;
+    const credential = GoogleAuthProvider.credential(response.credential);
+    signInWithCredential(auth, credential).catch(err => {
+      console.error('Firebase sign-in error:', err);
+      showToast('Sign-in failed. Try again.');
+    });
+    // onAuthStateChanged in the module script will call launchApp()
   }
 
   window.onGoogleLibraryLoad = initGoogleSignIn;
 
   function enterDemo() {
-    currentUser = { name: 'Jeremy', email: 'jeremy@cardkeep.com', initials: 'J' };
+    _isDemo = true;
+    window.currentUser = { name: 'Jeremy', email: 'jeremy@cardkeep.com', initials: 'J', uid: null };
     cards = [
       { id:1, store:'Amazon', number:'6543 2109 8765 4321', pin:'7890', balance:47.50, expiry:'12/2027', color:'linear-gradient(135deg,#1E1B4B,#4C1D95)', notes:'Birthday gift', sharedWith:['sarah@family.com'], image:null },
       { id:2, store:'Starbucks', number:'6012 3456 7890 1234', pin:'', balance:6.50, expiry:'06/2026', color:'linear-gradient(135deg,#059669,#34D399)', notes:'', sharedWith:[], image:null },
@@ -1324,10 +1415,10 @@ body {
       ],
       2: [{ spent:6.25, newBal:6.50, note:'Spent $6.25 at Starbucks', date:'Jun 1, 2026, 08:42 AM' }]
     };
-    launchApp();
+    window.launchApp();
   }
 
-  function launchApp() {
+  window.launchApp = function() {
     document.getElementById('landing').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     document.getElementById('userAvatar').textContent = currentUser.initials;
@@ -1337,11 +1428,20 @@ body {
     document.getElementById('accountEmail').textContent = currentUser.email;
     document.getElementById('accountEmailSub').textContent = currentUser.email;
     renderCards(); renderSharedCards(); updateSummary();
-  }
+  };
 
   function signOut() {
+    if (_unsubOwned) { _unsubOwned(); _unsubOwned = null; }
+    if (_unsubShared) { _unsubShared(); _unsubShared = null; }
+    if (!_isDemo && window._fb) {
+      window._fb.fbSignOut(window._fb.auth);
+    }
     if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
-    currentUser = null; cards = [];
+    _isDemo = false;
+    window.currentUser = null;
+    cards = [];
+    sharedWithMeCards = [];
+    usageHistory = {};
     document.getElementById('landing').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
     showToast('Signed out — see you soon! 👋');
@@ -1374,10 +1474,13 @@ body {
   function renderSharedCards() {
     const grid = document.getElementById('sharedCardsGrid');
     const empty = document.getElementById('sharedEmptyState');
-    const shared = cards.filter(c => c.sharedWith && c.sharedWith.length > 0);
-    if (!shared.length) { grid.innerHTML=''; empty.style.display='flex'; return; }
+    // Cards I own that I've shared with others
+    const sharedByMe = cards.filter(c => c.sharedWith && c.sharedWith.length > 0);
+    // Cards others shared with me
+    const allShared = [...sharedByMe, ...sharedWithMeCards];
+    if (!allShared.length) { grid.innerHTML=''; empty.style.display='flex'; return; }
     empty.style.display = 'none';
-    grid.innerHTML = shared.map(c => cardHTML(c)).join('');
+    grid.innerHTML = allShared.map(c => cardHTML(c)).join('');
   }
 
   function cardHTML(card) {
@@ -1406,8 +1509,9 @@ body {
   }
 
   function updateSummary() {
-    document.getElementById('totalCards').textContent = cards.length;
-    const total = cards.reduce((s,c) => s + parseFloat(c.balance||0), 0);
+    const allCards = [...cards, ...sharedWithMeCards];
+    document.getElementById('totalCards').textContent = allCards.length;
+    const total = allCards.reduce((s,c) => s + parseFloat(c.balance||0), 0);
     document.getElementById('totalValue').textContent = total.toFixed(2);
     const people = new Set(cards.flatMap(c => c.sharedWith||[]));
     document.getElementById('totalShared').textContent = people.size;
@@ -1442,7 +1546,7 @@ body {
     const balance = document.getElementById('cardBalance').value;
     if (!balance || isNaN(balance)) { showToast('Please enter a balance ⚠️'); return; }
     const prev = document.getElementById('uploadPreview');
-    cards.unshift({
+    const newCard = {
       id: Date.now(), store,
       number: document.getElementById('cardNumber').value.trim(),
       pin: document.getElementById('cardPin').value.trim(),
@@ -1452,7 +1556,9 @@ body {
       notes: document.getElementById('cardNotes').value.trim(),
       sharedWith: [],
       image: prev.src && prev.style.display!=='none' ? prev.src : null
-    });
+    };
+    cards.unshift(newCard);
+    _saveCardToFirestore(newCard).catch(e => console.error('Save error:', e));
     renderCards(); renderSharedCards(); updateSummary();
     closeAddModal();
     showToast('🎉 ' + store + ' added to wallet!');
@@ -1460,6 +1566,8 @@ body {
   function deleteCard(id) {
     if (!confirm('Remove this card from your wallet?')) return;
     cards = cards.filter(c => c.id !== id);
+    delete usageHistory[id];
+    _deleteCardFromFirestore(id).catch(e => console.error('Delete error:', e));
     renderCards(); renderSharedCards(); updateSummary();
     showToast('Card removed');
   }
@@ -1534,6 +1642,7 @@ body {
 
     currentDetailCard.sharedWith.push(email);
     document.getElementById('shareEmail').value = '';
+    _saveCardToFirestore(currentDetailCard).catch(e => console.error('Share save error:', e));
     openDetailModal(currentDetailCard.id);
     renderCards(); renderSharedCards(); updateSummary();
 
@@ -1565,6 +1674,7 @@ body {
   function removeSharedUser(email) {
     if (!currentDetailCard) return;
     currentDetailCard.sharedWith = currentDetailCard.sharedWith.filter(e => e !== email);
+    _saveCardToFirestore(currentDetailCard).catch(e => console.error('Remove share error:', e));
     openDetailModal(currentDetailCard.id);
     renderCards(); renderSharedCards(); updateSummary();
     showToast('Access removed');
@@ -1599,6 +1709,7 @@ body {
         date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
       });
     }
+    _saveCardToFirestore(currentDetailCard).catch(e => console.error('Balance save error:', e));
     renderCards(); renderSharedCards(); updateSummary();
     openDetailModal(currentDetailCard.id);
     showToast('Balance updated to $' + val.toFixed(2) + ' ✓');
@@ -1613,6 +1724,7 @@ body {
       note: 'Spent $' + amount.toFixed(2) + ' at ' + currentDetailCard.store,
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
     });
+    _saveCardToFirestore(currentDetailCard).catch(e => console.error('QuickDeduct save error:', e));
     renderCards(); renderSharedCards(); updateSummary();
     openDetailModal(currentDetailCard.id);
     showToast('-$' + amount.toFixed(2) + ' → $' + newBal.toFixed(2) + ' left');
@@ -1630,13 +1742,24 @@ body {
   function addCardPhoto(event, id) {
     const file = event.target.files[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => { const card = cards.find(c => c.id === id); if (card) { card.image = ev.target.result; openDetailModal(id); renderCards(); showToast('📷 Photo saved!'); } };
+    reader.onload = ev => {
+      const card = cards.find(c => c.id === id);
+      if (card) {
+        card.image = ev.target.result;
+        _saveCardToFirestore(card).catch(e => console.error('Photo save error:', e));
+        openDetailModal(id); renderCards(); showToast('📷 Photo saved!');
+      }
+    };
     reader.readAsDataURL(file);
   }
   function replaceCardPhoto(event, id) { addCardPhoto(event, id); }
   function removeCardPhoto(id) {
     const card = cards.find(c => c.id === id);
-    if (card) { card.image = null; openDetailModal(id); showToast('Photo removed'); }
+    if (card) {
+      card.image = null;
+      _saveCardToFirestore(card).catch(e => console.error('Photo remove error:', e));
+      openDetailModal(id); showToast('Photo removed');
+    }
   }
   function openLightbox(src) { document.getElementById('lbImg').src = src; document.getElementById('photoLightbox').classList.add('open'); }
   function closeLightbox() { document.getElementById('photoLightbox').classList.remove('open'); }
