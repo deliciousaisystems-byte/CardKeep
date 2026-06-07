@@ -1140,7 +1140,7 @@ body {
           <span class="sc-arr">›</span>
         </div>
         <div class="settings-cell" id="planCell" onclick="isPro() ? null : showUpgradeModal('card')">
-          <div class="sc-left"><span class="sc-label">Current Plan</span><span class="sc-sub">Free — up to 2 cards, no sharing</span></div>
+          <div class="sc-left"><span class="sc-label">Current Plan</span><span class="sc-sub">Free — up to 2 cards, 1 shared card</span></div>
           <span class="sc-arr">›</span>
         </div>
         <div class="settings-cell" onclick="showToast('Your data is encrypted 🔒')">
@@ -1473,7 +1473,7 @@ body {
   function showUpgradeModal(reason) {
     const msg = reason === 'card'
       ? 'You\'ve reached the 2-card limit on the free plan.'
-      : 'Sharing cards is a Pro feature.';
+      : 'You\'ve used your 1 free shared card. Upgrade for unlimited sharing.';
     document.getElementById('upgradeReason').textContent = msg;
     document.getElementById('upgradeModal').classList.add('open');
   }
@@ -1501,7 +1501,7 @@ body {
       if (manageBtn) manageBtn.style.display = 'block';
     } else {
       if (badge) badge.textContent = '✦ Free Plan';
-      if (planCell) planCell.querySelector('.sc-sub').textContent = 'Free — up to 2 cards, no sharing';
+      if (planCell) planCell.querySelector('.sc-sub').textContent = 'Free — up to 2 cards, 1 shared card';
       if (upgradeBanner) upgradeBanner.style.display = 'block';
       if (manageBtn) manageBtn.style.display = 'none';
     }
@@ -1711,11 +1711,16 @@ body {
     </div>`).join('');
 
     // Show/hide share input based on plan
+    // Free plan: can share 1 card total
     const shareSection = document.getElementById('shareInputSection');
-    if (!isPro()) {
-      shareSection.innerHTML = `<div onclick="showUpgradeModal('share')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--p-ghost);border-radius:14px;cursor:pointer;border:1.5px dashed var(--purple);">
+    const totalSharedCards = cards.filter(c => c.sharedWith && c.sharedWith.length > 0).length;
+    const thisCardAlreadyShared = c.sharedWith && c.sharedWith.length > 0;
+    const freeShareLimitReached = !isPro() && totalSharedCards >= 1 && !thisCardAlreadyShared;
+
+    if (freeShareLimitReached) {
+      shareSection.innerHTML = `<div onclick="showUpgradeModal('share')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--p-ghost);border-radius:14px;cursor:pointer;border:1.5px dashed var(--p-light);">
         <span style="font-size:20px;">⚡</span>
-        <div><div style="font-size:13px;font-weight:700;color:var(--p-deep)">Upgrade to share cards</div><div style="font-size:11px;color:var(--text3)">Pro plan — $0.99/mo</div></div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--p-deep)">Upgrade to share more cards</div><div style="font-size:11px;color:var(--text3)">Free plan includes 1 shared card · Pro unlocks unlimited</div></div>
         <span style="margin-left:auto;font-size:18px;">›</span>
       </div>`;
     } else {
@@ -1731,7 +1736,9 @@ body {
   function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); currentDetailCard = null; }
 
   function shareCard() {
-    if (!isPro()) { showUpgradeModal('share'); return; }
+    const totalSharedCards = cards.filter(c => c.sharedWith && c.sharedWith.length > 0).length;
+    const thisCardAlreadyShared = currentDetailCard && currentDetailCard.sharedWith && currentDetailCard.sharedWith.length > 0;
+    if (!isPro() && totalSharedCards >= 1 && !thisCardAlreadyShared) { showUpgradeModal('share'); return; }
     const email = document.getElementById('shareEmail').value.trim();
     if (!email || !email.includes('@')) { showToast('Enter a valid email ⚠️'); return; }
     if (!currentDetailCard) return;
